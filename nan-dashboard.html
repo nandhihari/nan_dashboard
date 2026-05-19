@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What I've Been Doing — Nandhitha</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #03334e;
+    --coral: #ed6e57;
+    --cream: #faf7f2;
+    --ink: #1a1a1a;
+    --muted: #7a7a7a;
+    --border: #e0dbd3;
+    --green: #3d8b6e;
+    --amber: #c8832a;
+  }
+
+  html { font-size: 16px; }
+
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* HEADER */
+  .hero {
+    background: var(--navy);
+    color: var(--cream);
+    padding: 60px 48px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 320px; height: 320px;
+    border-radius: 50%;
+    background: var(--coral);
+    opacity: 0.12;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: 200px;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: var(--coral);
+    opacity: 0.07;
+  }
+
+  .hero-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--coral);
+    margin-bottom: 16px;
+  }
+
+  .hero h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    line-height: 1.1;
+    max-width: 700px;
+    margin-bottom: 20px;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--coral);
+  }
+
+  .hero-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: rgba(250,247,242,0.6);
+    max-width: 560px;
+    line-height: 1.7;
+  }
+
+  .timeline-strip {
+    display: flex;
+    gap: 0;
+    margin-top: 40px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 28px;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .month-block {
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .month-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--coral);
+    margin-bottom: 6px;
+  }
+
+  .month-desc {
+    font-size: 13px;
+    color: rgba(250,247,242,0.75);
+    line-height: 1.5;
+  }
+
+  /* GRID */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 16px;
+    padding: 40px 32px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* CARD */
+  .card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card:nth-child(1) { animation-delay: 0.05s; }
+  .card:nth-child(2) { animation-delay: 0.1s; }
+  .card:nth-child(3) { animation-delay: 0.15s; }
+  .card:nth-child(4) { animation-delay: 0.2s; }
+  .card:nth-child(5) { animation-delay: 0.25s; }
+  .card:nth-child(6) { animation-delay: 0.3s; }
+  .card:nth-child(7) { animation-delay: 0.35s; }
+
+  .card-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-label::before {
+    content: '';
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--coral);
+    flex-shrink: 0;
+  }
+
+  .card h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.6rem;
+    line-height: 1.2;
+    margin-bottom: 16px;
+    color: var(--navy);
+  }
+
+  .card p {
+    font-size: 14px;
+    line-height: 1.7;
+    color: #555;
+  }
+
+  /* SPAN HELPERS */
+  .col-4 { grid-column: span 4; }
+  .col-6 { grid-column: span 6; }
+  .col-8 { grid-column: span 8; }
+  .col-12 { grid-column: span 12; }
+
+  @media (max-width: 900px) {
+    .col-4, .col-6, .col-8, .col-12 { grid-column: span 12; }
+    .hero { padding: 40px 24px 36px; }
+    .grid { padding: 24px 16px; gap: 12px; }
+  }
+
+  /* STAT CARD */
+  .stat-card {
+    background: var(--navy);
+    color: var(--cream);
+    border: none;
+  }
+
+  .stat-card .card-label { color: rgba(250,247,242,0.5); }
+  .stat-card .card-label::before { background: var(--coral); }
+  .stat-card h2 { color: var(--cream); }
+  .stat-card p { color: rgba(250,247,242,0.7); }
+
+  .big-number {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(3rem, 6vw, 5rem);
+    color: var(--coral);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  /* TAG LIST */
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 100px;
+    background: var(--cream);
+    border: 1px solid var(--border);
+    color: var(--navy);
+  }
+
+  .tag.coral { background: var(--coral); color: white; border-color: var(--coral); }
+  .tag.navy { background: var(--navy); color: white; border-color: var(--navy); }
+  .tag.green { background: var(--green); color: white; border-color: var(--green); }
+
+  /* PROGRESS BARS */
+  .progress-row {
+    margin-bottom: 14px;
+  }
+
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #555;
+    margin-bottom: 6px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .progress-bar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: var(--coral);
+    transition: width 1s ease;
+  }
+
+  .progress-fill.navy { background: var(--navy); }
+  .progress-fill.green { background: var(--green); }
+
+  /* CHECKLIST */
+  .checklist {
+    list-style: none;
+    margin-top: 8px;
+  }
+
+  .checklist li {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #444;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .checklist li:last-child { border-bottom: none; }
+
+  .check-icon {
+    flex-shrink: 0;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--coral);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+  }
+
+  .check-icon::after {
+    content: '✓';
+    font-size: 9px;
+    color: white;
+    font-weight: bold;
+  }
+
+  /* ACCENT CARD */
+  .accent-card {
+    background: var(--coral);
+    border: none;
+    color: white;
+  }
+
+  .accent-card .card-label { color: rgba(255,255,255,0.65); }
+  .accent-card .card-label::before { background: white; }
+  .accent-card h2 { color: white; }
+  .accent-card p { color: rgba(255,255,255,0.85); }
+
+  /* QUOTE CARD */
+  .quote-card {
+    background: var(--navy);
+    border: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .quote-text {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(1.1rem, 2vw, 1.4rem);
+    color: var(--cream);
+    line-height: 1.5;
+    font-style: italic;
+  }
+
+  .quote-text span {
+    color: var(--coral);
+    font-style: normal;
+  }
+
+  /* DIVIDER */
+  .section-divider {
+    grid-column: span 12;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 0 0;
+  }
+
+  .section-divider span {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .section-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* FOOTER */
+  .footer {
+    text-align: center;
+    padding: 32px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+  }
+
+  .footer strong { color: var(--coral); }
+
+  /* APP GRID */
+  .app-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .app-item {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--navy);
+    line-height: 1.4;
+  }
+
+  .app-item .app-role {
+    font-size: 9px;
+    color: var(--muted);
+    margin-top: 3px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-label">February 2025 → May 2025 · 3 months in · Evidence on record</div>
+  <h1>What I've been<br><em>actually doing.</em></h1>
+  <p class="hero-sub">This is not a justification. This is a record. Three months of deliberate, structured effort across health, career, relationships, and creative work — built on the wreckage of December and the quiet of January. Documented for anyone who needs to see it.</p>
+
+  <div class="timeline-strip">
+    <div class="month-block">
+      <div class="month-name">Dec</div>
+      <div class="month-desc">Armageddon.<br>Survived it.</div>
+    </div>
+    <div class="month-block">
+      <div class="month-name">Jan</div>
+      <div class="month-desc">Rest &amp; recovery.<br>Not laziness.</div>
+    </div>
+    <div class="month-block">
+      <div class="month-name">Feb ›</div>
+      <div class="month-desc">Deep planning<br>&amp; strategy. Start.</div>
+    </div>
+    <div class="month-block">
+      <div class="month-name">Mar</div>
+      <div class="month-desc">Build phase.<br>Portfolios. Skills.</div>
+    </div>
+    <div class="month-block">
+      <div class="month-name">Apr</div>
+      <div class="month-desc">Education,<br>networking, website</div>
+    </div>
+    <div class="month-block">
+      <div class="month-name">May</div>
+      <div class="month-desc">Launchpad.<br>Course. Blog. Events.</div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN GRID -->
+<div class="grid">
+
+  <!-- SECTION: NUMBERS -->
+  <div class="section-divider"><span>By the numbers</span></div>
+
+  <div class="card stat-card col-4">
+    <div class="card-label">Apps built & deployed</div>
+    <div class="big-number">12+</div>
+    <p>OTM Website, UTC Site, PayStub App, DraftForge, Nowish, UTA Academy, Time Tracker, HealthClick, Lumen, Obscura Odyssey, Jeeves/Sonder Bot, PDF Scraper — each with full branding, coding, hosting, UX.</p>
+  </div>
+
+  <div class="card stat-card col-4">
+    <div class="card-label">Weeks jogging</div>
+    <div class="big-number">6+</div>
+    <p>2–3 times a week since April. Consistent, unannounced, unglamorous. Just doing it.</p>
+  </div>
+
+  <div class="card stat-card col-4">
+    <div class="card-label">Webinars attended</div>
+    <div class="big-number">8+</div>
+    <p>Outskill, OpenClaw, Claude Terminal, Runway AI, Windsurf & Devin, n8n refreshers, LinkedIn/email marketing with AI, Humanic CEO Arjun Salsema — and counting.</p>
+  </div>
+
+  <!-- SECTION: HEALTH -->
+  <div class="section-divider"><span>Health & body</span></div>
+
+  <div class="card col-6">
+    <div class="card-label">Physical wellbeing</div>
+    <h2>Rebuilding the body intentionally</h2>
+    <p style="margin-bottom:18px">Started in Feb/March and sustained through now. Not a phase — a lifestyle shift.</p>
+
+    <div class="progress-row">
+      <div class="progress-label"><span>Reducing food quantity</span><span>Ongoing</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:80%"></div></div>
+    </div>
+    <div class="progress-row">
+      <div class="progress-label"><span>Soy milk + herbal teas</span><span>Daily</span></div>
+      <div class="progress-bar"><div class="progress-fill navy" style="width:90%"></div></div>
+    </div>
+    <div class="progress-row">
+      <div class="progress-label"><span>Jogging 2–3x/week</span><span>Since April</span></div>
+      <div class="progress-bar"><div class="progress-fill green" style="width:70%"></div></div>
+    </div>
+    <div class="progress-row">
+      <div class="progress-label"><span>Cooking at home</span><span>Feb onwards</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:85%"></div></div>
+    </div>
+
+    <div class="tag-list" style="margin-top:20px">
+      <span class="tag">Cranberry juice</span>
+      <span class="tag">Raw garlic</span>
+      <span class="tag">Lime & lemon for acidity</span>
+      <span class="tag">Grape cleanse</span>
+      <span class="tag">Lymphatic fasting</span>
+      <span class="tag">Mint & jasmine teas</span>
+      <span class="tag">More water</span>
+      <span class="tag">Tea only when needed</span>
+    </div>
+  </div>
+
+  <div class="card accent-card col-6">
+    <div class="card-label">Mental health</div>
+    <h2>Kept my shit together. That's not nothing.</h2>
+    <p>Coming out of what December was — the conscious choice to saturate every waking hour with work and human development, leaving no room to mope, is not passive. It is a daily, active decision. One that requires more discipline than it looks like from the outside.</p>
+    <br>
+    <p>Shlokas play while I work. Devi mantras when I bathe. Recitation is daily. Morning riyaaz has restarted. Temple visits begin this month. The spiritual thread is already woven in — the formal practice is being added on top of what's already there.</p>
+    <br>
+    <p>Laughter with friends is a deliberate decompression strategy, not avoidance. The work is still happening. Both things are true.</p>
+  </div>
+
+  <!-- SECTION: PROFESSIONAL -->
+  <div class="section-divider"><span>Professional work</span></div>
+
+  <div class="card col-12">
+    <div class="card-label">Apps & products built — each includes: branding · UI/UX · coding · hosting · deployment · bug fixes · project management</div>
+    <div class="app-grid">
+      <div class="app-item">OTM Website<div class="app-role">Full stack · Live</div></div>
+      <div class="app-item">OTM PayStub<div class="app-role">Full stack · Live</div></div>
+      <div class="app-item">UTC Website<div class="app-role">React/Vite · Live</div></div>
+      <div class="app-item">DraftForge<div class="app-role">Construction app</div></div>
+      <div class="app-item">Nowish<div class="app-role">v1→v5 · Listed</div></div>
+      <div class="app-item">UTA Academy<div class="app-role">LMS · Live</div></div>
+      <div class="app-item">Jeeves / Sonder<div class="app-role">n8n Telegram bot</div></div>
+      <div class="app-item">HealthClick<div class="app-role">Food scanner</div></div>
+      <div class="app-item">Lumen<div class="app-role">Wellbeing tracker</div></div>
+      <div class="app-item">Time Tracker<div class="app-role">Contractor tool</div></div>
+      <div class="app-item">Obscura Odyssey<div class="app-role">Location game</div></div>
+      <div class="app-item">PDF Scraper<div class="app-role">Personal utility</div></div>
+      <div class="app-item">Spam Checker<div class="app-role">n8n pipeline</div></div>
+      <div class="app-item">Content Scraper<div class="app-role">n8n automation</div></div>
+    </div>
+  </div>
+
+  <div class="card col-6">
+    <div class="card-label">Client development</div>
+    <h2>Actively building a pipeline</h2>
+    <ul class="checklist">
+      <li><span class="check-icon"></span>Sent portfolio to Rachel — marketing client lead</li>
+      <li><span class="check-icon"></span>Sent portfolio & quote to Dr. Susan Chen — fractional marketing</li>
+      <li><span class="check-icon"></span>Connected with Denzel / Outskill — education collaboration</li>
+      <li><span class="check-icon"></span>Attended Exabytes Women Entrepreneurship event, demonstrated UTC workflow live</li>
+      <li><span class="check-icon"></span>Connected with Wanyin (ANCHR AI Labs) — potential collaborator</li>
+      <li><span class="check-icon"></span>Built full UTC portfolio with 3 case studies: OTM, Param Swaram, Season'd</li>
+      <li><span class="check-icon"></span>Set up Google Workspace, Google Business Profile, LinkedIn presence</li>
+      <li><span class="check-icon"></span>Meeting Maria from Outskill tomorrow — lunch to connect and explore collaboration possibilities</li>
+    </ul>
+  </div>
+
+  <div class="card col-6">
+    <div class="card-label">Education & teaching</div>
+    <h2>UTA Academy — built from zero</h2>
+    <ul class="checklist">
+      <li><span class="check-icon"></span>Full LMS platform live at uta-academy.vercel.app</li>
+      <li><span class="check-icon"></span>4 modules written from real build experience</li>
+      <li><span class="check-icon"></span>Completion certificates designed</li>
+      <li><span class="check-icon"></span>Free AI education sessions planned for coming weeks</li>
+      <li><span class="check-icon"></span>2-day paid bootcamp scoped for July · 20 pax cap · tiered pricing</li>
+      <li><span class="check-icon"></span>Curriculum philosophy: concepts-first, tools-agnostic</li>
+    </ul>
+  </div>
+
+  <!-- SECTION: FAMILY & SOCIAL -->
+  <div class="section-divider"><span>Family & social</span></div>
+
+  <div class="card col-4">
+    <div class="card-label">Extended family</div>
+    <h2>Present &amp; showing up</h2>
+    <p>Cousins: once a fortnight, sometimes twice a week. Grandma and extended family: once a month at minimum. Not because it's required — because ties matter and this is being actively maintained.</p>
+  </div>
+
+  <div class="card col-8">
+    <div class="card-label">New & expanding income streams — in exploration</div>
+    <h2>Not waiting. Diversifying.</h2>
+    <div class="tag-list">
+      <span class="tag coral">AI Education (UTA)</span>
+      <span class="tag coral">AI Bootcamp · July</span>
+      <span class="tag coral">Online Singing Classes</span>
+      <span class="tag coral">Online Shloka Classes</span>
+      <span class="tag navy">Gel Nails — self-taught, monetising</span>
+      <span class="tag navy">English Tutoring — signed up</span>
+      <span class="tag">Voice Acting — exploring</span>
+      <span class="tag">YouTube — AI content channel</span>
+      <span class="tag">YouTube — Singing content</span>
+      <span class="tag green">Carnatic Riyaaz — restarted today</span>
+      <span class="tag">Simvest — in planning</span>
+      <span class="tag">App Store — Nowish iOS</span>
+    </div>
+    <p style="margin-top:16px; font-size:13px; color:#555;">A musical and creative reputation built over years — including Vasantham Star 2017 — is the foundation. The channels being built now sit on top of that.</p>
+  </div>
+
+  <div class="card col-12" style="border-left: 4px solid var(--amber);">
+    <div class="card-label" style="color: var(--amber);">Areas of active improvement — known, owned, being worked on</div>
+    <h2 style="color: var(--navy);">Not perfect. Recalibrating in real time.</h2>
+    <p style="margin-bottom: 16px;">Burnout taught me my limits. The lesson was expensive. I know what I need to add — and I'm adding them as capacity allows, not as performance for anyone's benefit.</p>
+    <div class="tag-list">
+      <span class="tag" style="border-color: var(--amber); color: var(--amber);">Temple — starting this month</span>
+      <span class="tag" style="border-color: var(--amber); color: var(--amber);">Deeper meditation practice</span>
+      <span class="tag" style="border-color: var(--amber); color: var(--amber);">More consistent sleep</span>
+    </div>
+    <p style="margin-top: 14px; font-size: 13px; color: #666;">No one in this family — no one anywhere — is doing everything right all the time. Knowing your gaps and naming them honestly is further along than most people get.</p>
+  </div>
+
+  <!-- GRATITUDE -->
+  <div class="card col-12" style="background: var(--cream); border: 2px solid var(--navy);">
+    <div class="card-label">To my family</div>
+    <h2 style="color: var(--navy); margin-bottom: 16px;">Thank you. Genuinely.</h2>
+    <p style="font-size: 15px; line-height: 1.8; color: #444; max-width: 800px;">
+      The love, help, advice, and support through everything — especially through the hardest stretch — has not gone unnoticed or unappreciated. I carry it. I know it comes from a place of care.<br><br>
+      But I can only do the best I can. And my best, right now, is this. Please don't go looking for the holes — you will always find them, in me, in anyone. Instead: breathe. Give me room to breathe. Watch what grows from what is being sowed.
+    </p>
+  </div>
+
+  <!-- QUOTE -->
+  <div class="card quote-card col-12">
+    <div class="quote-text">
+      "Businesses take <span>6 months to a year</span> to generate revenue. I am three months in, with infrastructure, clients in pipeline, a bootcamp in July, and multiple streams in motion. I am not doing nothing. I am doing <span>everything</span> — in sequence, on purpose, while keeping myself healthy and whole."
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Generated May 2025 &nbsp;·&nbsp; <strong>Nandhitha Gurunath Hari</strong> &nbsp;·&nbsp; Urban Turban Creatives &nbsp;·&nbsp; utc.sg
+</div>
+
+</body>
+</html>
