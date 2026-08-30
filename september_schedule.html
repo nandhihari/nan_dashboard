@@ -85,6 +85,18 @@
   table.habit-table td.habit-name{
     text-align:left;font-size:12.5px;color:var(--cream-dim);white-space:nowrap;padding-right:14px;
   }
+  table.habit-table-mobile{border-collapse:collapse;width:100%;table-layout:fixed;}
+  .habit-table-mobile{display:none;}
+  table.habit-table-mobile th, table.habit-table-mobile td{padding:7px 3px;text-align:center;}
+  table.habit-table-mobile th{font-family:'Fraunces',serif;font-size:9.5px;line-height:1.25;color:var(--mist);font-weight:500;white-space:normal;}
+  table.habit-table-mobile td.day-num{
+    text-align:left;font-size:11.5px;color:var(--cream-dim);white-space:nowrap;padding-right:6px;font-family:'Inter',sans-serif;width:26px;
+  }
+  table.habit-table-mobile tr.today td{color:var(--dawn-saffron);}
+  @media (max-width:700px){
+    .habit-table{display:none;}
+    .habit-table-mobile{display:table;}
+  }
   .dot{width:14px;height:14px;border-radius:50%;border:1px solid var(--line);margin:0 auto;background:transparent;}
   .dot.filled{background:var(--dawn-saffron);border-color:var(--dawn-saffron);}
   .dot.future{opacity:0.25;}
@@ -137,8 +149,13 @@
   .reflection-prompt{font-size:12px;color:var(--mist);margin-bottom:8px;line-height:1.6;}
 
   @media (max-width:700px){
-    .week-grid{grid-template-columns:repeat(7,minmax(80px,1fr));overflow-x:auto;}
+    .week-grid{grid-template-columns:1fr;gap:10px;}
     .habit-grid{font-size:11px;}
+    .day-col{padding:14px 18px;min-height:0;}
+    .day-col .dow{font-size:11.5px;}
+    .day-col .dnum{font-size:20px;margin-bottom:10px;}
+    .mini-item{font-size:14.5px;gap:10px;margin-bottom:9px;}
+    .mini-item .mini-box{width:16px;height:16px;border-radius:4px;}
   }
 </style>
 </head>
@@ -177,6 +194,7 @@
       <div class="stat-row" id="statRow"></div>
       <div class="habit-grid">
         <table class="habit-table" id="habitTable"></table>
+        <table class="habit-table-mobile" id="habitTableMobile"></table>
       </div>
     </div>
   </div>
@@ -287,7 +305,14 @@
       tabButtons.forEach(function(b){ b.classList.remove('active'); });
       btn.classList.add('active');
       document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
-      document.getElementById('view-'+btn.getAttribute('data-view')).classList.add('active');
+      var viewName = btn.getAttribute('data-view');
+      document.getElementById('view-'+viewName).classList.add('active');
+      // Always refresh the view you're switching INTO from the shared data,
+      // rather than trusting whatever was last rendered — this is what
+      // guarantees Daily/Weekly/Dashboard never show stale checkmarks.
+      if(viewName === 'dashboard') renderDashboard();
+      else if(viewName === 'weekly') renderWeekly();
+      else if(viewName === 'daily') renderDaily();
     });
   });
 
@@ -332,6 +357,27 @@
       rows += '</tr>';
     });
     table.innerHTML = '<thead>'+thead+'</thead><tbody>'+rows+'</tbody>';
+
+    // ---- mobile version: same data, axes flipped — habits across the top,
+    // days running down the side. Avoids a 30-column side-scroll on a phone.
+    var tableMobile = document.getElementById('habitTableMobile');
+    var theadMobile = '<tr><th></th>';
+    HABIT_ROWS.forEach(function(h){ theadMobile += '<th>'+h.label+'</th>'; });
+    theadMobile += '</tr>';
+
+    var rowsMobile = '';
+    for(var d=1; d<=daysInMonth; d++){
+      var ds = YEAR+'-09-'+String(d).padStart(2,'0');
+      var isToday = (todayNum===d);
+      var future = todayNum && d > todayNum;
+      rowsMobile += '<tr'+(isToday?' class="today"':'')+'><td class="day-num">'+d+'</td>';
+      HABIT_ROWS.forEach(function(h){
+        var filled = getChecked(ds, h.id);
+        rowsMobile += '<td><div class="dot'+(filled?' filled':'')+(future?' future':'')+'"></div></td>';
+      });
+      rowsMobile += '</tr>';
+    }
+    tableMobile.innerHTML = '<thead>'+theadMobile+'</thead><tbody>'+rowsMobile+'</tbody>';
   }
 
   // ================= WEEKLY =================
@@ -380,7 +426,7 @@
         var ds = el.getAttribute('data-ds'), id = el.getAttribute('data-id');
         var newVal = !getChecked(ds, id);
         setChecked(ds, id, newVal);
-        renderWeekly(); renderDashboard();
+        renderWeekly(); renderDashboard(); renderDaily();
       });
     });
 
