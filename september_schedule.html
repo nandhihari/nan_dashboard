@@ -308,6 +308,7 @@
   var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndocG1tbmZybHRnZmNqZ2dhZmh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMTIwNTgsImV4cCI6MjEwMzY4ODA1OH0.thjH1cMX2247zRFNfAmy-42ujAZ4JQygwhVPd3WYLc0';
   var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   var currentUserId = null;
+  var OWNER_EMAIL = 'nandhitha.g.hari@gmail.com';
   var isViewerMode = false;
   var viewingOwnerId = null;
 
@@ -403,17 +404,32 @@
   async function handleSession(session){
     if(session && session.user){
       currentUserId = session.user.id;
+      var email = session.user.email;
+
+      if(email === OWNER_EMAIL){
+        // ---- owner: the one and only account allowed to edit ----
+        isViewerMode = false;
+        document.body.classList.add('signed-in');
+        document.body.classList.remove('viewer-mode');
+        signOutBtn.style.display = 'inline-block';
+        viewerBanner.style.display = 'none';
+        ownerBackupRow.style.display = '';
+        shareBox.style.display = 'block';
+        DATA = await fetchOrCreateRow(currentUserId);
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA)); } catch(e){}
+        loadShareList();
+        fileStatus.textContent = 'Signed in as ' + email + ' — synced across your devices.';
+        renderDashboard(); renderWeekly(); renderDaily();
+        return;
+      }
 
       var { data: sharedOwners } = await supabase.rpc('get_my_shared_owners');
-      var actingAsViewer = sharedOwners && sharedOwners.length > 0 && sharedOwners[0].owner_id !== currentUserId;
-
-      document.body.classList.add('signed-in');
-      signOutBtn.style.display = 'inline-block';
-
-      if(actingAsViewer){
+      if(sharedOwners && sharedOwners.length > 0){
+        // ---- invited viewer: explicitly on the share list, read-only ----
         isViewerMode = true;
         viewingOwnerId = sharedOwners[0].owner_id;
-        document.body.classList.add('viewer-mode');
+        document.body.classList.add('signed-in', 'viewer-mode');
+        signOutBtn.style.display = 'inline-block';
         var { data: checkinsData, error: rpcErr } = await supabase.rpc('get_shared_checkins', { owner_uuid: viewingOwnerId });
         if(rpcErr){ console.error(rpcErr); }
         DATA = checkinsData || {};
@@ -421,19 +437,16 @@
         viewerBanner.textContent = 'Viewing Nandhitha\u2019s schedule — view only.';
         ownerBackupRow.style.display = 'none';
         shareBox.style.display = 'none';
-        fileStatus.textContent = 'Signed in as ' + session.user.email + ' — read-only view.';
-      } else {
-        isViewerMode = false;
-        document.body.classList.remove('viewer-mode');
-        viewerBanner.style.display = 'none';
-        ownerBackupRow.style.display = '';
-        shareBox.style.display = 'block';
-        DATA = await fetchOrCreateRow(currentUserId);
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA)); } catch(e){}
-        loadShareList();
-        fileStatus.textContent = 'Signed in as ' + session.user.email + ' — synced across your devices.';
+        fileStatus.textContent = 'Signed in as ' + email + ' — read-only view.';
+        renderDashboard(); renderWeekly(); renderDaily();
+        return;
       }
-      renderDashboard(); renderWeekly(); renderDaily();
+
+      // ---- neither the owner nor an invited viewer: no access at all ----
+      document.body.classList.remove('signed-in', 'viewer-mode');
+      currentUserId = null;
+      authNote.textContent = 'This email isn\u2019t authorized to view this schedule.';
+      await supabase.auth.signOut();
     } else {
       currentUserId = null;
       isViewerMode = false;
