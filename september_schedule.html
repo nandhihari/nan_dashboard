@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   :root{
@@ -158,11 +159,43 @@
     .mini-item .mini-box{width:16px;height:16px;border-radius:4px;}
   }
 </style>
+<style>
+  .auth-overlay{
+    position:fixed;inset:0;z-index:200;background:rgba(17,24,40,0.96);
+    display:flex;align-items:center;justify-content:center;padding:24px;
+  }
+  .auth-box{max-width:360px;width:100%;text-align:center;}
+  .auth-box h2{font-family:'Fraunces',serif;font-size:22px;color:var(--cream);margin-bottom:10px;}
+  .auth-box p{font-size:13px;color:var(--mist);margin-bottom:20px;line-height:1.6;}
+  .auth-box input{
+    width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line-soft);
+    background:rgba(255,255,255,0.04);color:var(--cream);font-size:14px;margin-bottom:12px;
+  }
+  .auth-box button{
+    width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--dawn-saffron);
+    background:rgba(208,148,69,0.14);color:var(--dawn-saffron);font-family:'Inter',sans-serif;
+    font-size:13px;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;
+  }
+  .auth-box button:hover{background:rgba(208,148,69,0.24);}
+  .auth-note{font-size:12px;color:var(--mist);margin-top:14px;}
+  body.signed-in .auth-overlay{display:none;}
+  body:not(.signed-in) .wrap{display:none;}
+</style>
 </head>
 <body>
 
 <div class="bg-fixed"></div>
 <div class="bg-tint"></div>
+
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-box">
+    <h2>This is yours alone</h2>
+    <p>Sign in with your email to sync this tracker across every device — no password, just a one-time link.</p>
+    <input type="email" id="authEmail" placeholder="you@email.com" autocomplete="email">
+    <button id="authSendBtn">Send Magic Link</button>
+    <div class="auth-note" id="authNote"></div>
+  </div>
+</div>
 
 <div class="wrap">
   <header class="top">
@@ -171,13 +204,12 @@
     <div class="sub">A firm guide. Not a law.</div>
     <div class="guide-note">Built from scratch after August — protected rest included, not optional this time.</div>
     <div class="backup-row">
-      <button id="createFileBtn">Create Save File</button>
-      <button id="reconnectFileBtn">Reconnect Save File</button>
       <button id="exportBtn">Export Backup</button>
       <button id="importBtn">Import Backup</button>
+      <button id="signOutBtn" style="display:none;">Sign Out</button>
       <input type="file" id="importFile" accept="application/json" style="display:none;">
     </div>
-    <div class="file-status" id="fileStatus">Not connected — saving to this browser only. Use Export/Import as backup, or connect a save file below (Chrome/Edge only).</div>
+    <div class="file-status" id="fileStatus">Connecting…</div>
   </header>
 
   <nav class="tabs">
@@ -234,25 +266,80 @@
   var STORAGE_KEY = 'sadhana_sept_2026_tracker_v1';
   var YEAR = 2026, MONTH = 8; // JS months are 0-indexed; September = 8
 
-  function loadData(){
+  var SUPABASE_URL = 'https://whpmmnfrltgfcjggafhw.supabase.co';
+  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndocG1tbmZybHRnZmNqZ2dhZmh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMTIwNTgsImV4cCI6MjEwMzY4ODA1OH0.thjH1cMX2247zRFNfAmy-42ujAZ4JQygwhVPd3WYLc0';
+  var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  var currentUserId = null;
+
+  function loadLocal(){
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
     catch(e){ return {}; }
   }
-  var fileHandle = null;
   function saveData(data){
+    // localStorage stays as an instant local cache so the UI never waits
+    // on a network round-trip to reflect a checkbox click.
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e){}
-    if(fileHandle){
-      // fire-and-forget — UI shouldn't wait on disk I/O
-      (async function(){
-        try {
-          var writable = await fileHandle.createWritable();
-          await writable.write(JSON.stringify(data, null, 2));
-          await writable.close();
-        } catch(err){ /* permission revoked or file moved — silently fall back to localStorage */ }
-      })();
+    if(currentUserId){
+      supabase.from('tracker_data')
+        .upsert({ user_id: currentUserId, data: data, updated_at: new Date().toISOString() })
+        .then(function(res){ if(res.error) console.error('Sync failed:', res.error); });
     }
   }
-  var DATA = loadData();
+  var DATA = loadLocal();
+
+  // ---- auth: magic-link email sign-in, no password ----
+  var authOverlay = document.getElementById('authOverlay');
+  var authEmail = document.getElementById('authEmail');
+  var authSendBtn = document.getElementById('authSendBtn');
+  var authNote = document.getElementById('authNote');
+  var fileStatus = document.getElementById('fileStatus');
+  var signOutBtn = document.getElementById('signOutBtn');
+
+  authSendBtn.addEventListener('click', async function(){
+    var email = (authEmail.value || '').trim();
+    if(!email){ authNote.textContent = 'Enter your email first.'; return; }
+    authSendBtn.disabled = true;
+    authNote.textContent = 'Sending…';
+    var { error } = await supabase.auth.signInWithOtp({
+      email: email,
+      options: { emailRedirectTo: window.location.href.split('#')[0] }
+    });
+    authSendBtn.disabled = false;
+    authNote.textContent = error ? ('Something went wrong: ' + error.message) : 'Check your email for the link — this page will pick it up automatically.';
+  });
+
+  signOutBtn.addEventListener('click', async function(){
+    await supabase.auth.signOut();
+  });
+
+  async function fetchOrCreateRow(userId){
+    var { data, error } = await supabase.from('tracker_data').select('data').eq('user_id', userId).maybeSingle();
+    if(error){ console.error('Load failed:', error); return loadLocal(); }
+    if(data) return data.data || {};
+    var insertRes = await supabase.from('tracker_data').insert({ user_id: userId, data: {} });
+    if(insertRes.error) console.error('Row creation failed:', insertRes.error);
+    return {};
+  }
+
+  async function handleSession(session){
+    if(session && session.user){
+      currentUserId = session.user.id;
+      document.body.classList.add('signed-in');
+      fileStatus.textContent = 'Signed in as ' + session.user.email + ' — synced across your devices.';
+      signOutBtn.style.display = 'inline-block';
+      DATA = await fetchOrCreateRow(currentUserId);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA)); } catch(e){}
+      renderDashboard(); renderWeekly(); renderDaily();
+    } else {
+      currentUserId = null;
+      document.body.classList.remove('signed-in');
+      signOutBtn.style.display = 'none';
+      fileStatus.textContent = 'Not signed in.';
+    }
+  }
+
+  supabase.auth.onAuthStateChange(function(event, session){ handleSession(session); });
+  supabase.auth.getSession().then(function(res){ handleSession(res.data.session); });
 
   function dateStr(d){
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
@@ -529,53 +616,6 @@
     e.target.value = '';
   });
 
-  // ---- optional: connect a real file for silent auto-save (Chrome/Edge only) ----
-  var fileStatus = document.getElementById('fileStatus');
-  var createBtn = document.getElementById('createFileBtn');
-  var reconnectBtn = document.getElementById('reconnectFileBtn');
-  var fsSupported = 'showSaveFilePicker' in window && 'showOpenFilePicker' in window;
-
-  if(!fsSupported){
-    createBtn.disabled = true; reconnectBtn.disabled = true;
-    createBtn.style.opacity = '0.4'; reconnectBtn.style.opacity = '0.4';
-    fileStatus.textContent = 'Auto-save to a file isn\'t supported in this browser (works in Chrome or Edge). Use Export/Import as your backup instead.';
-  }
-
-  function setConnected(name){
-    fileStatus.textContent = 'Connected — auto-saving to "' + name + '" on every change.';
-    fileStatus.classList.add('connected');
-  }
-
-  createBtn.addEventListener('click', async function(){
-    try {
-      fileHandle = await window.showSaveFilePicker({
-        suggestedName: 'sadhana-sept-tracker-data.json',
-        types: [{ description:'JSON', accept:{'application/json':['.json']} }]
-      });
-      await (async function(){
-        var writable = await fileHandle.createWritable();
-        await writable.write(JSON.stringify(DATA, null, 2));
-        await writable.close();
-      })();
-      setConnected(fileHandle.name);
-    } catch(e){ /* user cancelled */ }
-  });
-
-  reconnectBtn.addEventListener('click', async function(){
-    try {
-      var handles = await window.showOpenFilePicker({
-        types: [{ description:'JSON', accept:{'application/json':['.json']} }]
-      });
-      fileHandle = handles[0];
-      var file = await fileHandle.getFile();
-      var text = await file.text();
-      var loaded = JSON.parse(text);
-      DATA = loaded;
-      saveData(DATA);
-      renderDashboard(); renderWeekly(); renderDaily();
-      setConnected(fileHandle.name);
-    } catch(e){ /* user cancelled or file unreadable */ }
-  });
 })();
 </script>
 </body>
