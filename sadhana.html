@@ -24,7 +24,7 @@
     --line-soft:rgba(244,239,230,0.08);
     --jade:#4f8a6b;
   }
-  html{font-size:16px;scroll-behavior:smooth;}
+  html{font-size:16px;scroll-behavior:smooth;overflow-x:hidden;}
   body{
     background:var(--void); color:var(--cream);
     font-family:'Inter',sans-serif; line-height:1.7;
@@ -35,9 +35,9 @@
   /* ================= FIXED BACKGROUND LAYER ================= */
   .bg-layer{position:fixed;inset:0;z-index:0;overflow:hidden;background:var(--void);}
   .bg-img{
-    position:absolute;inset:-2% ;width:104%;height:104%;
+    position:absolute;inset:0;width:100%;height:100%;
     background-size:cover;background-position:center;
-    opacity:0;will-change:opacity, transform;
+    opacity:0;transform:scale(1.04);will-change:opacity, transform;
   }
   .bg-tint{
     position:fixed;inset:0;z-index:1;pointer-events:none;
@@ -672,9 +672,9 @@
     targetIntensity = lerp(curRain, nextRain, t);
 
     Object.keys(bgImgs).forEach(function(k){
-      if(k === curBg && k === nextBg){ bgImgs[k].style.opacity = '1'; bgImgs[k].style.transform = 'translateY(0)'; }
-      else if(k === curBg){ bgImgs[k].style.opacity = String(1 - t); bgImgs[k].style.transform = 'translateY(' + (-t*3) + '%)'; }
-      else if(k === nextBg){ bgImgs[k].style.opacity = String(t); bgImgs[k].style.transform = 'translateY(' + ((1-t)*3) + '%)'; }
+      if(k === curBg && k === nextBg){ bgImgs[k].style.opacity = '1'; bgImgs[k].style.transform = 'scale(1.04) translateY(0)'; }
+      else if(k === curBg){ bgImgs[k].style.opacity = String(1 - t); bgImgs[k].style.transform = 'scale(1.04) translateY(' + (-t*3) + '%)'; }
+      else if(k === nextBg){ bgImgs[k].style.opacity = String(t); bgImgs[k].style.transform = 'scale(1.04) translateY(' + ((1-t)*3) + '%)'; }
       else { bgImgs[k].style.opacity = '0'; }
     });
 
