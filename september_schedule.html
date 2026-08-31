@@ -51,6 +51,33 @@
   }
   .backup-row button:hover{border-color:var(--line);color:var(--cream-dim);}
   .file-status{margin-top:10px;font-size:11px;color:var(--mist);text-align:center;}
+  .viewer-banner{
+    margin-top:14px;padding:10px 16px;border-radius:10px;border:1px solid var(--dawn-saffron);
+    background:rgba(208,148,69,0.1);color:var(--dawn-saffron);font-size:12.5px;text-align:center;
+  }
+  .share-box{
+    margin-top:16px;padding:14px 16px;border-radius:12px;border:1px solid var(--line-soft);
+    background:rgba(255,255,255,0.02);max-width:420px;margin-left:auto;margin-right:auto;
+  }
+  .share-title{font-size:11px;color:var(--mist);margin-bottom:10px;text-align:center;}
+  .share-list{margin-bottom:10px;}
+  .share-item{
+    display:flex;align-items:center;justify-content:space-between;font-size:12.5px;
+    color:var(--cream-dim);padding:5px 0;border-bottom:1px solid var(--line-soft);
+  }
+  .share-item button{
+    background:none;border:none;color:var(--mist);font-size:11px;cursor:pointer;text-decoration:underline;
+  }
+  .share-add-row{display:flex;gap:8px;}
+  .share-add-row input{
+    flex:1;padding:8px 10px;border-radius:8px;border:1px solid var(--line-soft);
+    background:rgba(255,255,255,0.03);color:var(--cream);font-size:12.5px;
+  }
+  .share-add-row button{
+    padding:8px 14px;border-radius:8px;border:1px solid var(--dawn-saffron);
+    background:rgba(208,148,69,0.1);color:var(--dawn-saffron);font-size:11.5px;cursor:pointer;
+  }
+  body.viewer-mode .mini-item, body.viewer-mode .block-row{cursor:default;}
   .file-status.connected{color:var(--jade);}
 
   nav.tabs{display:flex;justify-content:center;gap:8px;margin:28px 0 34px;flex-wrap:wrap;}
@@ -203,11 +230,20 @@
     <h1>The Schedule</h1>
     <div class="sub">A firm guide. Not a law.</div>
     <div class="guide-note">Built from scratch after August — protected rest included, not optional this time.</div>
-    <div class="backup-row">
+    <div class="viewer-banner" id="viewerBanner" style="display:none;"></div>
+    <div class="backup-row" id="ownerBackupRow">
       <button id="exportBtn">Export Backup</button>
       <button id="importBtn">Import Backup</button>
       <button id="signOutBtn" style="display:none;">Sign Out</button>
       <input type="file" id="importFile" accept="application/json" style="display:none;">
+    </div>
+    <div class="share-box" id="shareBox" style="display:none;">
+      <div class="share-title">Shared with (view-only, checkmarks only — reflections stay private)</div>
+      <div class="share-list" id="shareList"></div>
+      <div class="share-add-row">
+        <input type="email" id="shareEmailInput" placeholder="family member's email">
+        <button id="shareAddBtn">Add</button>
+      </div>
     </div>
     <div class="file-status" id="fileStatus">Connecting…</div>
   </header>
@@ -240,9 +276,11 @@
         <button id="weekNext">Next →</button>
       </div>
       <div class="week-grid" id="weekGrid"></div>
-      <div class="extra-label">Weekly Reflection</div>
-      <div class="reflection-prompt">Guilt, fear, trust, what's within your means — no need to solve it, just name it.</div>
-      <textarea class="reflection" id="weeklyReflection" placeholder="This week..."></textarea>
+      <div id="reflectionWrap">
+        <div class="extra-label">Weekly Reflection</div>
+        <div class="reflection-prompt">Guilt, fear, trust, what's within your means — no need to solve it, just name it.</div>
+        <textarea class="reflection" id="weeklyReflection" placeholder="This week..."></textarea>
+      </div>
     </div>
   </div>
 
@@ -270,6 +308,8 @@
   var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndocG1tbmZybHRnZmNqZ2dhZmh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMTIwNTgsImV4cCI6MjEwMzY4ODA1OH0.thjH1cMX2247zRFNfAmy-42ujAZ4JQygwhVPd3WYLc0';
   var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   var currentUserId = null;
+  var isViewerMode = false;
+  var viewingOwnerId = null;
 
   function loadLocal(){
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
@@ -279,9 +319,16 @@
     // localStorage stays as an instant local cache so the UI never waits
     // on a network round-trip to reflect a checkbox click.
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e){}
-    if(currentUserId){
+    // Shared viewers never write anything — this is a hard stop here in
+    // addition to every click handler already refusing to toggle.
+    if(currentUserId && !isViewerMode){
+      var checkins = {}, reflections = {};
+      Object.keys(data).forEach(function(k){
+        if(k.indexOf('refl_') === 0) reflections[k] = data[k];
+        else checkins[k] = data[k];
+      });
       supabase.from('tracker_data')
-        .upsert({ user_id: currentUserId, data: data, updated_at: new Date().toISOString() })
+        .upsert({ user_id: currentUserId, checkins: checkins, reflections: reflections, updated_at: new Date().toISOString() })
         .then(function(res){ if(res.error) console.error('Sync failed:', res.error); });
     }
   }
@@ -294,6 +341,9 @@
   var authNote = document.getElementById('authNote');
   var fileStatus = document.getElementById('fileStatus');
   var signOutBtn = document.getElementById('signOutBtn');
+  var viewerBanner = document.getElementById('viewerBanner');
+  var ownerBackupRow = document.getElementById('ownerBackupRow');
+  var shareBox = document.getElementById('shareBox');
 
   authSendBtn.addEventListener('click', async function(){
     var email = (authEmail.value || '').trim();
@@ -313,27 +363,84 @@
   });
 
   async function fetchOrCreateRow(userId){
-    var { data, error } = await supabase.from('tracker_data').select('data').eq('user_id', userId).maybeSingle();
+    var { data, error } = await supabase.from('tracker_data').select('checkins, reflections').eq('user_id', userId).maybeSingle();
     if(error){ console.error('Load failed:', error); return loadLocal(); }
-    if(data) return data.data || {};
-    var insertRes = await supabase.from('tracker_data').insert({ user_id: userId, data: {} });
+    if(data) return Object.assign({}, data.checkins || {}, data.reflections || {});
+    var insertRes = await supabase.from('tracker_data').insert({ user_id: userId, checkins: {}, reflections: {} });
     if(insertRes.error) console.error('Row creation failed:', insertRes.error);
     return {};
   }
 
+  // ---- sharing: manage who can view (owner), or discover what's shared with you (viewer) ----
+  async function loadShareList(){
+    var { data, error } = await supabase.from('tracker_shares').select('id, viewer_email').eq('owner_id', currentUserId);
+    if(error){ console.error(error); return; }
+    var listEl = document.getElementById('shareList');
+    listEl.innerHTML = '';
+    (data || []).forEach(function(row){
+      var el = document.createElement('div');
+      el.className = 'share-item';
+      el.innerHTML = '<span>'+row.viewer_email+'</span><button data-id="'+row.id+'">Remove</button>';
+      listEl.appendChild(el);
+    });
+    listEl.querySelectorAll('button').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        await supabase.from('tracker_shares').delete().eq('id', btn.getAttribute('data-id'));
+        loadShareList();
+      });
+    });
+  }
+  document.getElementById('shareAddBtn').addEventListener('click', async function(){
+    var input = document.getElementById('shareEmailInput');
+    var email = (input.value || '').trim().toLowerCase();
+    if(!email) return;
+    var { error } = await supabase.from('tracker_shares').insert({ owner_id: currentUserId, viewer_email: email });
+    if(error){ authNote.textContent = ''; alert('Could not add: ' + error.message); return; }
+    input.value = '';
+    loadShareList();
+  });
+
   async function handleSession(session){
     if(session && session.user){
       currentUserId = session.user.id;
+
+      var { data: sharedOwners } = await supabase.rpc('get_my_shared_owners');
+      var actingAsViewer = sharedOwners && sharedOwners.length > 0 && sharedOwners[0].owner_id !== currentUserId;
+
       document.body.classList.add('signed-in');
-      fileStatus.textContent = 'Signed in as ' + session.user.email + ' — synced across your devices.';
       signOutBtn.style.display = 'inline-block';
-      DATA = await fetchOrCreateRow(currentUserId);
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA)); } catch(e){}
+
+      if(actingAsViewer){
+        isViewerMode = true;
+        viewingOwnerId = sharedOwners[0].owner_id;
+        document.body.classList.add('viewer-mode');
+        var { data: checkinsData, error: rpcErr } = await supabase.rpc('get_shared_checkins', { owner_uuid: viewingOwnerId });
+        if(rpcErr){ console.error(rpcErr); }
+        DATA = checkinsData || {};
+        viewerBanner.style.display = 'block';
+        viewerBanner.textContent = 'Viewing ' + sharedOwners[0].owner_email + '\u2019s schedule — view only. Checkmarks and progress only; reflections stay private.';
+        ownerBackupRow.style.display = 'none';
+        shareBox.style.display = 'none';
+        fileStatus.textContent = 'Signed in as ' + session.user.email + ' — read-only view.';
+      } else {
+        isViewerMode = false;
+        document.body.classList.remove('viewer-mode');
+        viewerBanner.style.display = 'none';
+        ownerBackupRow.style.display = '';
+        shareBox.style.display = 'block';
+        DATA = await fetchOrCreateRow(currentUserId);
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA)); } catch(e){}
+        loadShareList();
+        fileStatus.textContent = 'Signed in as ' + session.user.email + ' — synced across your devices.';
+      }
       renderDashboard(); renderWeekly(); renderDaily();
     } else {
       currentUserId = null;
-      document.body.classList.remove('signed-in');
+      isViewerMode = false;
+      document.body.classList.remove('signed-in', 'viewer-mode');
       signOutBtn.style.display = 'none';
+      viewerBanner.style.display = 'none';
+      shareBox.style.display = 'none';
       fileStatus.textContent = 'Not signed in.';
     }
   }
@@ -510,6 +617,7 @@
 
     grid.querySelectorAll('.mini-item').forEach(function(el){
       el.addEventListener('click', function(){
+        if(isViewerMode) return;
         var ds = el.getAttribute('data-ds'), id = el.getAttribute('data-id');
         var newVal = !getChecked(ds, id);
         setChecked(ds, id, newVal);
@@ -517,11 +625,18 @@
       });
     });
 
-    // reflection text tied to the Monday date of this week
-    var reflKey = 'refl_'+dateStr(weekAnchor);
-    var ta = document.getElementById('weeklyReflection');
-    ta.value = DATA[reflKey] || '';
-    ta.oninput = function(){ DATA[reflKey] = ta.value; saveData(DATA); };
+    // reflection text tied to the Monday date of this week — never shown to
+    // shared viewers, since reflections aren't even fetched in viewer mode
+    var reflWrap = document.getElementById('reflectionWrap');
+    if(isViewerMode){
+      reflWrap.style.display = 'none';
+    } else {
+      reflWrap.style.display = '';
+      var reflKey = 'refl_'+dateStr(weekAnchor);
+      var ta = document.getElementById('weeklyReflection');
+      ta.value = DATA[reflKey] || '';
+      ta.oninput = function(){ DATA[reflKey] = ta.value; saveData(DATA); };
+    }
   }
   document.getElementById('weekPrev').addEventListener('click', function(){ weekAnchor.setDate(weekAnchor.getDate()-7); renderWeekly(); });
   document.getElementById('weekNext').addEventListener('click', function(){ weekAnchor.setDate(weekAnchor.getDate()+7); renderWeekly(); });
@@ -562,6 +677,7 @@
     row.className = 'block-row' + (checked ? ' checked' : '');
     row.innerHTML = '<div class="box"></div><div class="time">'+item.time+'</div><div class="txt"><strong>'+item.label+'</strong><span>'+(item.sub||'')+'</span></div>';
     row.addEventListener('click', function(){
+      if(isViewerMode) return;
       var newVal = !getChecked(ds, item.id);
       setChecked(ds, item.id, newVal);
       renderDaily(); renderDashboard(); renderWeekly();
